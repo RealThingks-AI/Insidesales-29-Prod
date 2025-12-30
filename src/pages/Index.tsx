@@ -1,190 +1,303 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Deal, DealStage } from "@/types/deal";
+import { DealForm } from "@/components/DealForm";
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { DashboardContent } from "@/components/dashboard/DashboardContent";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { FeatureCard } from "@/components/FeatureCard";
-import { StatCard } from "@/components/StatCard";
-import { 
-  Zap, 
-  Shield, 
-  TrendingUp, 
-  Layers, 
-  Sparkles, 
-  Rocket,
-  ArrowRight
-} from "lucide-react";
-import heroBg from "@/assets/hero-bg.jpg";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { LayoutGrid, List, Plus, LogOut } from "lucide-react";
 
 const Index = () => {
-  const features = [
-    {
-      icon: Zap,
-      title: "Lightning Fast",
-      description: "Optimize your apps for maximum performance with cutting-edge technology and real-time monitoring."
-    },
-    {
-      icon: Shield,
-      title: "Secure by Default",
-      description: "Enterprise-grade security built into every layer, protecting your data and users 24/7."
-    },
-    {
-      icon: Layers,
-      title: "Unified Management",
-      description: "Control all your applications from one powerful dashboard with comprehensive analytics."
-    },
-    {
-      icon: Sparkles,
-      title: "AI-Powered Insights",
-      description: "Get intelligent recommendations and automated optimizations powered by machine learning."
-    },
-    {
-      icon: TrendingUp,
-      title: "Scale Effortlessly",
-      description: "Grow from prototype to production without infrastructure headaches or performance concerns."
-    },
-    {
-      icon: Rocket,
-      title: "Deploy Instantly",
-      description: "Push updates in seconds with zero downtime and automatic rollback capabilities."
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [initialStage, setInitialStage] = useState<DealStage>('Lead');
+  const [activeView, setActiveView] = useState<'kanban' | 'list'>('kanban');
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
     }
-  ];
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDeals();
+    }
+  }, [user]);
+
+  const fetchDeals = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('deals')
+        .select('*')
+        .order('modified_at', { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch deals",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setDeals((data || []) as unknown as Deal[]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateDeal = async (dealId: string, updates: Partial<Deal>) => {
+    try {
+      const { error } = await supabase
+        .from('deals')
+        .update({ ...updates, modified_at: new Date().toISOString() })
+        .eq('id', dealId);
+
+      if (error) throw error;
+
+      setDeals(prev => prev.map(deal => 
+        deal.id === dealId ? { ...deal, ...updates } : deal
+      ));
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update deal",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveDeal = async (dealData: Partial<Deal>) => {
+    try {
+      if (isCreating) {
+        const { data, error } = await supabase
+          .from('deals')
+          .insert([{ 
+            ...dealData, 
+            deal_name: dealData.project_name || 'Untitled Deal',
+            created_by: user?.id,
+            modified_by: user?.id 
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setDeals(prev => [data as unknown as Deal, ...prev]);
+      } else if (selectedDeal) {
+        const updateData = {
+          ...dealData,
+          deal_name: dealData.project_name || selectedDeal.project_name || 'Untitled Deal',
+          modified_at: new Date().toISOString(),
+          modified_by: user?.id
+        };
+        
+        console.log("Updating deal with data:", updateData);
+        
+        await handleUpdateDeal(selectedDeal.id, updateData);
+        
+        await fetchDeals();
+      }
+    } catch (error) {
+      console.error("Error in handleSaveDeal:", error);
+      throw error;
+    }
+  };
+
+  const handleDeleteDeals = async (dealIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('deals')
+        .delete()
+        .in('id', dealIds);
+
+      if (error) throw error;
+
+      setDeals(prev => prev.filter(deal => !dealIds.includes(deal.id)));
+      
+      toast({
+        title: "Success",
+        description: `Deleted ${dealIds.length} deal(s)`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete deals",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImportDeals = async (importedDeals: (Partial<Deal> & { shouldUpdate?: boolean })[]) => {
+    try {
+      let createdCount = 0;
+      let updatedCount = 0;
+
+      for (const importDeal of importedDeals) {
+        const { shouldUpdate, ...dealData } = importDeal;
+        
+        const existingDeal = deals.find(d => 
+          (dealData.id && d.id === dealData.id) || 
+          (dealData.project_name && d.project_name === dealData.project_name)
+        );
+
+        if (existingDeal) {
+          const { data, error } = await supabase
+            .from('deals')
+            .update({
+              ...dealData,
+              modified_by: user?.id,
+              deal_name: dealData.project_name || existingDeal.deal_name
+            })
+            .eq('id', existingDeal.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+          updatedCount++;
+        } else {
+          const newDealData = {
+            ...dealData,
+            stage: dealData.stage || 'Lead' as const,
+            created_by: user?.id,
+            modified_by: user?.id,
+            deal_name: dealData.project_name || `Imported Deal ${Date.now()}`
+          };
+
+          const { data, error } = await supabase
+            .from('deals')
+            .insert(newDealData)
+            .select()
+            .single();
+
+          if (error) throw error;
+          createdCount++;
+        }
+      }
+
+      await fetchDeals();
+      
+      toast({
+        title: "Import successful",
+        description: `Created ${createdCount} new deals, updated ${updatedCount} existing deals`,
+      });
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to import deals. Please check the CSV format.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateDeal = (stage: DealStage) => {
+    setInitialStage(stage);
+    setIsCreating(true);
+    setSelectedDeal(null);
+    setIsFormOpen(true);
+  };
+
+  const handleDealClick = (deal: Deal) => {
+    setSelectedDeal(deal);
+    setIsCreating(false);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setSelectedDeal(null);
+    setIsCreating(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-primary" />
-              <span className="text-xl font-bold text-foreground">AppMaster</span>
-            </div>
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a href="#stats" className="text-muted-foreground hover:text-foreground transition-colors">
-                Platform
-              </a>
-              <a href="#cta" className="text-muted-foreground hover:text-foreground transition-colors">
-                Get Started
-              </a>
-            </div>
-            <Button variant="hero" size="sm">
-              Sign Up Free
+    <div className="min-h-screen bg-background">
+      {/* Inline header to replace DashboardHeader */}
+      <header className="border-b bg-card sticky top-0 z-50">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold">Deals Pipeline</h1>
+            <ToggleGroup type="single" value={activeView} onValueChange={(v) => v && setActiveView(v as 'kanban' | 'list')}>
+              <ToggleGroupItem value="kanban" aria-label="Kanban View" className="h-8 px-3">
+                <LayoutGrid className="w-4 h-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="List View" className="h-8 px-3">
+                <List className="w-4 h-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => handleCreateDeal('Lead')} size="sm" className="gap-2">
+              <Plus className="w-4 h-4" /> New Deal
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{ 
-            backgroundImage: `url(${heroBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        <div className="container mx-auto px-6 py-24 md:py-32 relative">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border/50">
-              <Sparkles className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium text-foreground">Master Your App Ecosystem</span>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-              Build, Deploy, and
-              <span className="bg-gradient-primary bg-clip-text text-transparent"> Scale Apps</span> 
-              <br />with Confidence
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              The complete platform for modern app development. Streamline your workflow, 
-              enhance security, and ship faster than ever before.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="gap-2">
-                Get Started Free
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-              <Button variant="outlineHero" size="lg">
-                Watch Demo
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <DashboardStats deals={deals} />
 
-      {/* Stats Section */}
-      <section id="stats" className="py-16 bg-background/50">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <StatCard value="99.9%" label="Uptime Guaranteed" trend="↑ 24/7 Monitoring" />
-            <StatCard value="50K+" label="Active Developers" trend="↑ Growing Daily" />
-            <StatCard value="2.5M" label="Apps Deployed" trend="↑ This Month" />
-            <StatCard value="<100ms" label="Avg Response Time" trend="↑ Lightning Fast" />
-          </div>
-        </div>
-      </section>
+      <DashboardContent
+        activeView={activeView}
+        deals={deals}
+        onUpdateDeal={handleUpdateDeal}
+        onDealClick={handleDealClick}
+        onCreateDeal={handleCreateDeal}
+        onDeleteDeals={handleDeleteDeals}
+        onImportDeals={handleImportDeals}
+        onRefresh={fetchDeals}
+      />
 
-      {/* Features Section */}
-      <section id="features" className="py-24">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Everything You Need to Succeed
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powerful features designed to help you build better apps faster, 
-              without compromising on quality or security.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <FeatureCard key={index} {...feature} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section id="cta" className="py-24 bg-background/50">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center bg-card rounded-2xl p-12 shadow-card border border-border/50">
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Ready to Master Your Apps?
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of developers who trust AppMaster to build, deploy, 
-              and scale their applications with confidence.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="gap-2">
-                Start Building Now
-                <Rocket className="h-5 w-5" />
-              </Button>
-              <Button variant="outline" size="lg">
-                View Pricing
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground mt-6">
-              No credit card required · 14-day free trial · Cancel anytime
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-background py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-gradient-primary" />
-              <span className="font-semibold text-foreground">AppMaster</span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              © 2024 AppMaster. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <DealForm
+        deal={selectedDeal}
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSave={handleSaveDeal}
+        onRefresh={fetchDeals}
+        isCreating={isCreating}
+        initialStage={initialStage}
+      />
     </div>
   );
 };
