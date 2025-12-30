@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,12 +16,17 @@ export const useUserRole = () => {
       }
 
       try {
-        console.log('Fetching role for user:', user.email);
-        
-        // Check user metadata directly for role
-        const role = user.user_metadata?.role || 'user';
-        console.log('User role from metadata:', role);
-        setUserRole(role);
+        // Fetch role from user_roles table via secure RPC function
+        const { data, error } = await supabase.rpc('get_user_role', {
+          p_user_id: user.id
+        });
+
+        if (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole('user');
+        } else {
+          setUserRole(data || 'user');
+        }
       } catch (error) {
         console.error('Error in fetchUserRole:', error);
         setUserRole('user');
@@ -35,7 +39,8 @@ export const useUserRole = () => {
   }, [user]);
 
   const isAdmin = userRole === 'admin';
-  const canEdit = isAdmin;
+  const isManager = userRole === 'manager';
+  const canEdit = isAdmin || isManager;
   const canDelete = isAdmin;
   const canManageUsers = isAdmin;
   const canAccessSettings = isAdmin;
@@ -43,6 +48,7 @@ export const useUserRole = () => {
   return {
     userRole,
     isAdmin,
+    isManager,
     canEdit,
     canDelete,
     canManageUsers,
