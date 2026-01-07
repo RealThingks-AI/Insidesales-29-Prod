@@ -33,8 +33,6 @@ export const defaultContactColumns: ContactColumnConfig[] = [
   { field: 'contact_source', label: 'Source', visible: true, order: 7 },
   { field: 'linkedin', label: 'LinkedIn', visible: false, order: 8 },
   { field: 'website', label: 'Website', visible: false, order: 9 },
-  { field: 'segment', label: 'Segment', visible: false, order: 10 },
-  { field: 'score', label: 'Score', visible: false, order: 11 },
   { field: 'tags', label: 'Tags', visible: false, order: 12 },
   { field: 'engagement_score', label: 'Engagement Score', visible: false, order: 13 },
   { field: 'email_opens', label: 'Email Opens', visible: false, order: 14 },
