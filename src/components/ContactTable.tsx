@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, X, Eye, User, CalendarPlus, Pencil, CheckSquare } from "lucide-react";
 import { RowActionsDropdown, Edit, Trash2, Mail, UserPlus } from "./RowActionsDropdown";
 import { ContactDeleteConfirmDialog } from "./ContactDeleteConfirmDialog";
-import { ContactSegmentFilter } from "./ContactSegmentFilter";
+
 import { ContactModal } from "./ContactModal";
 import { ContactColumnCustomizer, ContactColumnConfig, defaultContactColumns } from "./ContactColumnCustomizer";
 import { ContactDetailModal } from "./contacts/ContactDetailModal";
@@ -64,8 +64,6 @@ interface Contact {
   created_by?: string;
   modified_by?: string;
   tags?: string[];
-  score?: number;
-  segment?: string;
   email_opens?: number;
   email_clicks?: number;
   engagement_score?: number;
@@ -130,7 +128,7 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
   
   const [sourceFilter, setSourceFilter] = useState<string>(() => sourceParam || "all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [segmentFilter, setSegmentFilter] = useState<string>("all");
+  
   const [tagFilter, setTagFilter] = useState<string | null>(null);
 
   // Use cached auth instead of fetching user each time
@@ -318,10 +316,6 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
       filtered = filtered.filter(contact => contact.contact_owner === ownerFilter);
     }
 
-    // Apply segment filter
-    if (segmentFilter && segmentFilter !== "all") {
-      filtered = filtered.filter(contact => contact.segment === segmentFilter);
-    }
 
     // Apply tag filter
     if (tagFilter) {
@@ -345,7 +339,7 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
 
     setFilteredContacts(filtered);
     setCurrentPage(1);
-  }, [contacts, debouncedSearchTerm, sourceFilter, ownerFilter, segmentFilter, tagFilter, sortField, sortDirection]);
+  }, [contacts, debouncedSearchTerm, sourceFilter, ownerFilter, tagFilter, sortField, sortDirection]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -483,13 +477,12 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
   const { displayNames } = useUserDisplayNames(ownerIds);
 
   // Check if any filters are active
-  const hasActiveFilters = debouncedSearchTerm !== "" || sourceFilter !== "all" || ownerFilter !== "all" || segmentFilter !== "all" || tagFilter !== null;
+  const hasActiveFilters = debouncedSearchTerm !== "" || sourceFilter !== "all" || ownerFilter !== "all" || tagFilter !== null;
 
   const clearAllFilters = () => {
     setSearchTerm("");
     setSourceFilter("all");
     setOwnerFilter("all");
-    setSegmentFilter("all");
     setTagFilter(null);
   };
 
@@ -571,7 +564,7 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
             </SelectContent>
           </Select>
 
-          <ContactSegmentFilter value={segmentFilter} onValueChange={setSegmentFilter} />
+          
 
           {tagFilter && (
             <Badge variant="secondary" className="flex items-center gap-1">
@@ -709,22 +702,6 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
                             <span className="truncate block">
                               {displayNames[contact.contact_owner] || "Loading..."}
                             </span>
-                          ) : (
-                            <span className="text-center text-muted-foreground w-full block">-</span>
-                          )
-                        ) : column.field === 'score' ? (
-                          contact.score != null ? (
-                            <span className={`font-medium ${contact.score >= 70 ? 'text-green-600 dark:text-green-400' : contact.score >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                              {contact.score}
-                            </span>
-                          ) : (
-                            <span className="text-center text-muted-foreground w-full block">-</span>
-                          )
-                        ) : column.field === 'segment' ? (
-                          contact.segment ? (
-                            <Badge variant="outline" className="text-xs">
-                              {contact.segment}
-                            </Badge>
                           ) : (
                             <span className="text-center text-muted-foreground w-full block">-</span>
                           )

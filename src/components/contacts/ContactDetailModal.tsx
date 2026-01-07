@@ -59,8 +59,6 @@ interface Contact {
   contact_source: string | null;
   description: string | null;
   tags: string[] | null;
-  score: number | null;
-  segment: string | null;
   email_opens: number | null;
   email_clicks: number | null;
   engagement_score: number | null;
@@ -162,11 +160,6 @@ export const ContactDetailModal = ({
 
   if (!contact) return null;
 
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-green-500';
-    if (score >= 40) return 'text-yellow-500';
-    return 'text-red-500';
-  };
 
   return (
     <>
@@ -190,18 +183,6 @@ export const ContactDetailModal = ({
                     >
                       {accountName || contact.company_name}
                     </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  {contact.score !== null && (
-                    <Badge className={`${getScoreColor(contact.score)} border`}>
-                      Score: {contact.score}
-                    </Badge>
-                  )}
-                  {contact.segment && (
-                    <Badge variant="outline" className="capitalize">
-                      {contact.segment}
-                    </Badge>
                   )}
                 </div>
               </div>
