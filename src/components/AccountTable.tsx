@@ -756,6 +756,7 @@ const AccountTable = forwardRef<AccountTableRef, AccountTableProps>(({
         onOpenChange={setTaskModalOpen}
         onSubmit={createTask}
         context={taskAccountId ? { module: 'accounts', recordId: taskAccountId, locked: true } : undefined}
+        nested={true}
       />
     </div>;
 });
