@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +14,6 @@ import { format } from "date-fns";
 import { DealColumnCustomizer, DealColumnConfig, defaultDealColumns } from "./DealColumnCustomizer";
 import { BulkActionsBar } from "./BulkActionsBar";
 import { DealsAdvancedFilter, AdvancedFilterState } from "./DealsAdvancedFilter";
-import { TaskModal } from "./tasks/TaskModal";
-import { useTasks } from "@/hooks/useTasks";
 import { InlineEditCell } from "./InlineEditCell";
 
 import { useToast } from "@/hooks/use-toast";
@@ -84,10 +83,7 @@ export const ListView = ({
     onSelectionChange?.(Array.from(selectedDeals));
   }, [selectedDeals, onSelectionChange]);
   
-  // Task Modal state
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
-  const [taskDealId, setTaskDealId] = useState<string | null>(null);
-  const { createTask } = useTasks();
+  const navigate = useNavigate();
 
   // Delete confirmation state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -537,8 +533,15 @@ export const ListView = ({
   const selectedDealObjects = deals.filter(deal => selectedDeals.has(deal.id));
 
   const handleCreateTask = (deal: Deal) => {
-    setTaskDealId(deal.id);
-    setTaskModalOpen(true);
+    const params = new URLSearchParams({
+      create: '1',
+      module: 'deals',
+      recordId: deal.id,
+      recordName: encodeURIComponent(deal.project_name || deal.deal_name || 'Deal'),
+      return: '/deals',
+      returnViewId: deal.id,
+    });
+    navigate(`/tasks?${params.toString()}`);
   };
 
   // Listen for column customizer open event from header
@@ -801,13 +804,6 @@ export const ListView = ({
           onClearSelection={() => setSelectedDeals(new Set())}
         />
       )}
-
-      <TaskModal
-        open={taskModalOpen}
-        onOpenChange={setTaskModalOpen}
-        onSubmit={createTask}
-        context={taskDealId ? { module: 'deals', recordId: taskDealId, locked: true } : undefined}
-      />
 
       <DealColumnCustomizer
         open={columnCustomizerOpen}
