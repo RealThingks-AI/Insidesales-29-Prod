@@ -60,6 +60,7 @@ interface TaskListViewProps {
   onSelectionChange?: (selectedIds: string[]) => void;
   visibleColumns?: string[];
   columnOrder?: string[];
+  dealIdFilter?: string | null;
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -94,6 +95,7 @@ export const TaskListView = ({
   onSelectionChange,
   visibleColumns = defaultVisibleColumns,
   columnOrder = [],
+  dealIdFilter,
 }: TaskListViewProps) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -151,9 +153,13 @@ export const TaskListView = ({
       
       const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
       const matchesAssignedTo = assignedToFilter === 'all' || task.assigned_to === assignedToFilter;
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignedTo;
+      
+      // Filter by deal_id if provided
+      const matchesDealId = !dealIdFilter || task.deal_id === dealIdFilter;
+      
+      return matchesSearch && matchesStatus && matchesPriority && matchesAssignedTo && matchesDealId;
     });
-  }, [tasks, searchTerm, statusFilter, hideCompleted, priorityFilter, assignedToFilter]);
+  }, [tasks, searchTerm, statusFilter, hideCompleted, priorityFilter, assignedToFilter, dealIdFilter]);
 
   // Reset to first page when filters change
   useEffect(() => {
