@@ -328,16 +328,27 @@ export const DealForm = ({ deal, isOpen, onClose, onSave, isCreating = false, in
     e.preventDefault();
     e.stopPropagation();
     if (!deal) return;
-    const params = new URLSearchParams({
-      create: '1',
-      module: 'deals',
-      recordId: deal.id,
-      recordName: deal.project_name || deal.deal_name || 'Deal',
-      return: '/deals',
-      returnViewId: deal.id,
-    });
+    
     onClose();
-    navigate(`/tasks?${params.toString()}`);
+    
+    if (linkedTasksCount > 0) {
+      // View existing tasks linked to this deal
+      const params = new URLSearchParams({
+        deal_id: deal.id,
+      });
+      navigate(`/tasks?${params.toString()}`);
+    } else {
+      // Create new task linked to this deal
+      const params = new URLSearchParams({
+        create: '1',
+        module: 'deals',
+        recordId: deal.id,
+        recordName: deal.project_name || deal.deal_name || 'Deal',
+        return: '/deals',
+        returnViewId: deal.id,
+      });
+      navigate(`/tasks?${params.toString()}`);
+    }
   };
 
   // Helper to get currency symbol
