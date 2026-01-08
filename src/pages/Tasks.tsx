@@ -90,8 +90,6 @@ const Tasks = () => {
 
   // Get owner parameter from URL - "me" means filter by current user
   const ownerParam = searchParams.get('owner');
-  // Get deal_id for filtering tasks linked to a specific deal
-  const dealIdFilter = searchParams.get('deal_id');
 
   // Sync owner filter when URL has owner=me
   useEffect(() => {
@@ -397,7 +395,6 @@ const Tasks = () => {
                 onSelectionChange={setSelectedTasks}
                 visibleColumns={visibleColumns}
                 columnOrder={columnOrder}
-                dealIdFilter={dealIdFilter}
               />
             )}
             {viewMode === 'kanban' && (
