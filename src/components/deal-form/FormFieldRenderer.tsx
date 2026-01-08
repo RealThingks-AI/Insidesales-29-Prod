@@ -594,7 +594,8 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
               console.log(`Textarea field ${field} update: setting to ${e.target.value}`);
               onChange(field, e.target.value);
             }}
-            rows={3}
+            rows={2}
+            className="min-h-[60px] resize-y"
             placeholder={`Enter ${getFieldLabel(field).toLowerCase()}...`}
           />
         );
