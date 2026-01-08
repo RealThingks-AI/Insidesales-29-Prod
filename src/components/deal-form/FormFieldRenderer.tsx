@@ -150,7 +150,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
           <Button
             variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full h-9 justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
           >
@@ -217,7 +217,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value || 'none'}
             onValueChange={(val) => onChange(field, val === 'none' ? null : val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select account..." />
             </SelectTrigger>
             <SelectContent>
@@ -237,7 +237,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value || 'none'}
             onValueChange={(val) => onChange(field, val === 'none' ? null : val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select contact..." />
             </SelectTrigger>
             <SelectContent>
@@ -267,7 +267,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value || 'none'}
             onValueChange={(val) => onChange(field, val === 'none' ? null : val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select lead owner..." />
             </SelectTrigger>
             <SelectContent>
@@ -293,7 +293,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || ''}
             onValueChange={(val) => onChange(field, parseInt(val))}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select priority..." />
             </SelectTrigger>
             <SelectContent>
@@ -315,7 +315,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
               onChange(field, parseInt(val));
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select probability..." />
             </SelectTrigger>
             <SelectContent>
@@ -334,7 +334,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || ''}
             onValueChange={(val) => onChange(field, val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select region..." />
             </SelectTrigger>
             <SelectContent>
@@ -353,7 +353,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || ''}
             onValueChange={(val) => onChange(field, val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select customer need..." />
             </SelectTrigger>
             <SelectContent>
@@ -377,7 +377,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
               onChange(field, val);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder={`Select ${getFieldLabel(field).toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
@@ -396,7 +396,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || ''}
             onValueChange={(val) => onChange(field, val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select relationship strength..." />
             </SelectTrigger>
             <SelectContent>
@@ -412,6 +412,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'budget':
         return (
           <Input
+            inputSize="control"
             type="number"
             step="0.01"
             min="0"
@@ -433,7 +434,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
               onChange(field, val);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select recurring status..." />
             </SelectTrigger>
             <SelectContent>
@@ -452,7 +453,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || 'EUR'}
             onValueChange={(val) => onChange(field, val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select currency" />
             </SelectTrigger>
             <SelectContent>
@@ -475,7 +476,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
             value={value?.toString() || ''}
             onValueChange={(val) => onChange(field, val)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select RFQ status" />
             </SelectTrigger>
             <SelectContent>
@@ -497,7 +498,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
               onChange(field, val);
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9">
               <SelectValue placeholder="Select handoff status" />
             </SelectTrigger>
             <SelectContent>
@@ -519,21 +520,13 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'end_date':
       case 'rfq_received_date':
       case 'proposal_due_date':
-        return (
-          <Input
-            type="date"
-            value={getStringValue(value)}
-            onChange={(e) => {
-              console.log(`Date field ${field} update: setting to ${e.target.value}`);
-              onChange(field, e.target.value);
-            }}
-          />
-        );
+        return renderDatePicker(field, value);
 
       case 'total_contract_value':
       case 'project_duration':
         return (
           <Input
+            inputSize="control"
             type="number"
             step="0.01"
             min="0"
@@ -552,6 +545,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'quarterly_revenue_q4':
         return (
           <Input
+            inputSize="control"
             type="number"
             step="0.01"
             min="0"
@@ -567,6 +561,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'total_revenue':
         return (
           <Input
+            inputSize="control"
             type="number"
             step="0.01"
             min="0"
@@ -583,6 +578,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'revenue':
         return (
           <Input
+            inputSize="control"
             type="number"
             value={getStringValue(value)}
             onChange={(e) => handleNumericChange(field, e.target.value)}
@@ -611,6 +607,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       case 'fax':
         return (
           <Input
+            inputSize="control"
             type="tel"
             value={getStringValue(value)}
             onChange={(e) => onChange(field, e.target.value)}
@@ -621,6 +618,7 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
       default:
         return (
           <Input
+            inputSize="control"
             value={getStringValue(value)}
             onChange={(e) => onChange(field, e.target.value)}
             placeholder={`Enter ${getFieldLabel(field).toLowerCase()}...`}
@@ -630,11 +628,11 @@ export const FormFieldRenderer = ({ field, value, onChange, onLeadSelect, error 
   };
 
   return (
-    <div className="space-y-2">
-      <Label>{getFieldLabel(field)}</Label>
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium">{getFieldLabel(field)}</Label>
       {renderField()}
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <p className="text-xs text-destructive mt-1">{error}</p>
       )}
     </div>
   );
